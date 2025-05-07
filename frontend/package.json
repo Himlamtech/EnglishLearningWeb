@@ -1,0 +1,40 @@
+{
+  "name": "flashcard",
+  "version": "1.0.0",
+  "description": "AI-powered Flashcard Application",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "keywords": [
+    "flashcard",
+    "ai",
+    "education",
+    "language-learning"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@headlessui/react": "^1.7.15",
+    "@heroicons/react": "^2.0.18",
+    "@types/node": "^20.3.1",
+    "@types/react": "^18.2.13",
+    "@types/react-dom": "^18.2.6",
+    "autoprefixer": "^10.4.14",
+    "axios": "^1.4.0",
+    "chart.js": "^4.3.0",
+    "framer-motion": "^10.12.16",
+    "next": "^13.4.6",
+    "openai": "^3.3.0",
+    "postcss": "^8.4.24",
+    "react": "^18.2.0",
+    "react-chartjs-2": "^5.2.0",
+    "react-dom": "^18.2.0",
+    "react-hot-toast": "^2.4.1",
+    "react-icons": "^4.9.0",
+    "tailwindcss": "^3.3.2",
+    "typescript": "^5.1.3"
+  }
+}
