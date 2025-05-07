@@ -7,6 +7,7 @@ import asyncio
 from models import (
     Flashcard,
     FlashcardCreate,
+    FlashcardUpdate,
     TextInput,
     EnhanceTextInput,
     GrammarResponse,
@@ -23,6 +24,7 @@ from openai_client import (
     close_session
 )
 import storage
+from config import OPENAI_API_KEY, API_BASE_URL, OPENAI_MODEL
 
 # Create FastAPI app
 app = FastAPI(
@@ -87,6 +89,41 @@ async def mark_flashcard_learned(word: str, is_learned: bool = True):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to update flashcard: {str(e)}")
+
+@app.put("/flashcards/{word}", response_model=Flashcard)
+async def update_flashcard(word: str, flashcard_data: FlashcardUpdate):
+    try:
+        # Convert to dict for storage update
+        update_data = flashcard_data.dict(exclude_unset=True)
+        success = storage.update_flashcard(word, update_data)
+
+        if not success:
+            raise HTTPException(status_code=404, detail=f"Flashcard with word '{word}' not found")
+
+        # Get the updated flashcard
+        flashcards = storage.get_flashcards()
+        updated_flashcard = next((f for f in flashcards if f['word'] == (update_data.get('word') or word)), None)
+
+        if not updated_flashcard:
+            raise HTTPException(status_code=404, detail="Failed to retrieve updated flashcard")
+
+        return updated_flashcard
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update flashcard: {str(e)}")
+
+@app.delete("/flashcards/{word}", response_model=dict)
+async def delete_flashcard(word: str):
+    try:
+        success = storage.delete_flashcard(word)
+        if not success:
+            raise HTTPException(status_code=404, detail=f"Flashcard with word '{word}' not found")
+        return {"success": True, "message": f"Flashcard '{word}' deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to delete flashcard: {str(e)}")
 
 @app.get("/flashcards/export", response_model=Dict)
 async def export_flashcards():
@@ -162,6 +199,9 @@ async def chat(chat_input: ChatInput):
 async def startup_event():
     """Initialize resources on startup."""
     print("Starting up the API server...")
+    print(f"API Key: {OPENAI_API_KEY}")
+    print(f"API Base URL: {API_BASE_URL}")
+    print(f"Model: {OPENAI_MODEL}")
 
 @app.on_event("shutdown")
 async def shutdown_event():

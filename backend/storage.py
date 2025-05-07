@@ -111,6 +111,8 @@ def update_flashcard(word: str, updated_data: Dict[str, Any]) -> bool:
                     flashcard['synonyms'] = updated_data['synonyms']
                 if 'isLearned' in updated_data:
                     flashcard['isLearned'] = updated_data['isLearned']
+                if 'word' in updated_data:  # Allow updating the word itself
+                    flashcard['word'] = updated_data['word']
                 flashcards[i] = flashcard
                 break
 
@@ -144,6 +146,46 @@ def update_flashcard(word: str, updated_data: Dict[str, Any]) -> bool:
 def mark_as_learned(word: str, is_learned: bool = True) -> bool:
     """Mark a flashcard as learned or not learned."""
     return update_flashcard(word, {'isLearned': is_learned})
+
+def delete_flashcard(word: str) -> bool:
+    """Delete a flashcard from the CSV file."""
+    ensure_file_exists()
+
+    try:
+        # Read existing data
+        flashcards = get_flashcards()
+
+        # Find the flashcard to delete
+        original_count = len(flashcards)
+        flashcards = [f for f in flashcards if f['word'] != word]
+
+        # If no flashcard was removed, return False
+        if len(flashcards) == original_count:
+            return False
+
+        # Write all remaining flashcards back to file
+        with open(FLASHCARDS_FILE, mode='w', newline='', encoding='utf-8') as file:
+            fieldnames = ['word', 'translatedWord', 'pronunciation', 'synonyms', 'isLearned', 'createdAt']
+            writer = csv.DictWriter(file, fieldnames=fieldnames)
+            writer.writeheader()
+
+            for flashcard in flashcards:
+                # Convert synonyms list to string
+                synonyms_str = ';'.join(flashcard['synonyms']) if flashcard['synonyms'] else ''
+
+                writer.writerow({
+                    'word': flashcard['word'],
+                    'translatedWord': flashcard['translatedWord'],
+                    'pronunciation': flashcard['pronunciation'],
+                    'synonyms': synonyms_str,
+                    'isLearned': str(flashcard['isLearned']).lower(),
+                    'createdAt': flashcard['createdAt']
+                })
+
+        return True
+    except Exception as e:
+        print(f"Error deleting flashcard: {e}")
+        return False
 
 def export_to_json() -> str:
     """Export flashcards to JSON format."""

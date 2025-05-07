@@ -11,6 +11,7 @@ module.exports = {
           light: '#60a5fa', // light blue
           DEFAULT: '#3b82f6', // blue
           dark: '#2563eb', // dark blue
+          darker: '#1d4ed8', // darker blue
         },
         secondary: {
           light: '#93c5fd', // lighter blue
@@ -31,7 +32,36 @@ module.exports = {
       backgroundImage: {
         'gradient-blue': 'linear-gradient(to right, var(--tw-gradient-stops))',
       },
+      keyframes: {
+        fadeIn: {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+        slideInRight: {
+          '0%': { transform: 'translateX(-10px)', opacity: '0' },
+          '100%': { transform: 'translateX(0)', opacity: '1' },
+        },
+        slideInUp: {
+          '0%': { transform: 'translateY(10px)', opacity: '0' },
+          '100%': { transform: 'translateY(0)', opacity: '1' },
+        },
+        pulse: {
+          '0%, 100%': { opacity: '1' },
+          '50%': { opacity: '0.5' },
+        },
+        bounce: {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-5px)' },
+        },
+      },
+      animation: {
+        fadeIn: 'fadeIn 0.5s ease-in-out',
+        slideInRight: 'slideInRight 0.5s ease-in-out',
+        slideInUp: 'slideInUp 0.5s ease-in-out',
+        pulse: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        bounce: 'bounce 1s ease-in-out infinite',
+      },
     },
   },
   plugins: [],
-} 
+}

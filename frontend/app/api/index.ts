@@ -25,6 +25,14 @@ export interface FlashcardCreateParams {
   targetLanguage?: string;
 }
 
+export interface FlashcardUpdateParams {
+  word?: string;
+  translatedWord?: string;
+  pronunciation?: string;
+  synonyms?: string[];
+  isLearned?: boolean;
+}
+
 export interface GrammarCheckResult {
   correctedText: string;
   errors: string[];
@@ -72,6 +80,28 @@ const flashcardApi = {
       return true;
     } catch (error) {
       console.error('Error marking flashcard:', error);
+      throw error;
+    }
+  },
+
+  // Update a flashcard
+  update: async (word: string, params: FlashcardUpdateParams): Promise<Flashcard> => {
+    try {
+      const response = await apiClient.put(`/flashcards/${encodeURIComponent(word)}`, params);
+      return response.data;
+    } catch (error) {
+      console.error('Error updating flashcard:', error);
+      throw error;
+    }
+  },
+
+  // Delete a flashcard
+  delete: async (word: string): Promise<boolean> => {
+    try {
+      await apiClient.delete(`/flashcards/${encodeURIComponent(word)}`);
+      return true;
+    } catch (error) {
+      console.error('Error deleting flashcard:', error);
       throw error;
     }
   },
@@ -182,4 +212,4 @@ export const api = {
   health: healthApi
 };
 
-export default api; 
+export default api;

@@ -22,11 +22,11 @@ body {
   .btn-primary {
     @apply px-4 py-2 bg-gradient-to-r from-blue-start via-blue-mid to-blue-end text-white font-semibold rounded-lg shadow-md hover:brightness-110 transition-all duration-300;
   }
-  
+
   .card {
     @apply bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow duration-300;
   }
-  
+
   .input-field {
     @apply w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent;
   }
@@ -34,4 +34,21 @@ body {
   .gradient-text {
     @apply bg-clip-text text-transparent bg-gradient-to-r from-blue-start via-blue-mid to-blue-end;
   }
-} 
+}
+
+/* 3D Card Flip Effect */
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+.preserve-3d {
+  transform-style: preserve-3d;
+}
+
+.backface-hidden {
+  backface-visibility: hidden;
+}
+
+.rotate-y-180 {
+  transform: rotateY(180deg);
+}

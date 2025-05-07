@@ -14,6 +14,13 @@ class FlashcardCreate(BaseModel):
     word: str
     targetLanguage: Optional[str] = "auto"
 
+class FlashcardUpdate(BaseModel):
+    word: Optional[str] = None
+    translatedWord: Optional[str] = None
+    pronunciation: Optional[str] = None
+    synonyms: Optional[List[str]] = None
+    isLearned: Optional[bool] = None
+
 class TextInput(BaseModel):
     text: str
 
@@ -30,4 +37,4 @@ class ChatMessage(BaseModel):
     content: str
 
 class ChatInput(BaseModel):
-    messages: List[ChatMessage] 
+    messages: List[ChatMessage]
