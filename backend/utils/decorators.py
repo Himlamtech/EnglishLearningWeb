@@ -11,7 +11,7 @@ import time
 from functools import wraps
 from typing import Callable, Any, Optional, Type, Union
 
-from .exceptions import APIException, FlashAIException
+from utils.exceptions import APIException, FlashAIException
 
 
 def retry_on_failure(
@@ -22,7 +22,7 @@ def retry_on_failure(
 ) -> Callable:
     """
     Decorator to retry function execution on failure.
-    
+
     Args:
         max_retries: Maximum number of retry attempts
         delay: Initial delay between retries in seconds
@@ -34,7 +34,7 @@ def retry_on_failure(
         async def async_wrapper(*args, **kwargs) -> Any:
             last_exception = None
             current_delay = delay
-            
+
             for attempt in range(max_retries + 1):
                 try:
                     return await func(*args, **kwargs)
@@ -46,22 +46,22 @@ def retry_on_failure(
                             f"Last error: {str(e)}"
                         )
                         raise
-                    
+
                     logging.warning(
                         f"Function {func.__name__} failed on attempt {attempt + 1}. "
                         f"Retrying in {current_delay}s. Error: {str(e)}"
                     )
                     await asyncio.sleep(current_delay)
                     current_delay *= backoff_factor
-            
+
             # This should never be reached, but just in case
             raise last_exception
-        
+
         @wraps(func)
         def sync_wrapper(*args, **kwargs) -> Any:
             last_exception = None
             current_delay = delay
-            
+
             for attempt in range(max_retries + 1):
                 try:
                     return func(*args, **kwargs)
@@ -73,23 +73,23 @@ def retry_on_failure(
                             f"Last error: {str(e)}"
                         )
                         raise
-                    
+
                     logging.warning(
                         f"Function {func.__name__} failed on attempt {attempt + 1}. "
                         f"Retrying in {current_delay}s. Error: {str(e)}"
                     )
                     time.sleep(current_delay)
                     current_delay *= backoff_factor
-            
+
             # This should never be reached, but just in case
             raise last_exception
-        
+
         # Return appropriate wrapper based on whether function is async
         if asyncio.iscoroutinefunction(func):
             return async_wrapper
         else:
             return sync_wrapper
-    
+
     return decorator
 
 
@@ -99,14 +99,14 @@ def log_execution_time(
 ) -> Callable:
     """
     Decorator to log function execution time.
-    
+
     Args:
         logger: Logger instance to use (defaults to function's module logger)
         level: Logging level to use
     """
     def decorator(func: Callable) -> Callable:
         func_logger = logger or logging.getLogger(func.__module__)
-        
+
         @wraps(func)
         async def async_wrapper(*args, **kwargs) -> Any:
             start_time = time.time()
@@ -124,7 +124,7 @@ def log_execution_time(
                     f"Function {func.__name__} failed after {execution_time:.3f}s: {str(e)}"
                 )
                 raise
-        
+
         @wraps(func)
         def sync_wrapper(*args, **kwargs) -> Any:
             start_time = time.time()
@@ -142,13 +142,13 @@ def log_execution_time(
                     f"Function {func.__name__} failed after {execution_time:.3f}s: {str(e)}"
                 )
                 raise
-        
+
         # Return appropriate wrapper based on whether function is async
         if asyncio.iscoroutinefunction(func):
             return async_wrapper
         else:
             return sync_wrapper
-    
+
     return decorator
 
 
@@ -158,14 +158,14 @@ def validate_api_key(func: Callable) -> Callable:
     """
     @wraps(func)
     def wrapper(*args, **kwargs) -> Any:
-        from ..config import Config
-        
+        from config import Config
+
         if not Config.OPENAI_API_KEY:
             raise APIException(
                 "OpenAI API key is not configured. Please set OPENAI_API_KEY environment variable.",
                 error_code="MISSING_API_KEY"
             )
-        
+
         return func(*args, **kwargs)
-    
+
     return wrapper

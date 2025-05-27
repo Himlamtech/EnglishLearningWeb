@@ -300,71 +300,28 @@ Please use the grammar_check function to provide your detailed analysis."""
 
         task_info = task_definitions.get(task, task_definitions["enhance"])
 
-        system_message = f"""You are an expert writing coach and editor with advanced skills in text improvement and stylistic enhancement.
+        system_message = f"""You are an expert writing coach. Your task is to {task} text to make it better.
 
-EXPERTISE:
-- Advanced writing techniques and stylistic analysis
-- Vocabulary enhancement and word choice optimization
-- Sentence structure and flow improvement
-- Audience-appropriate tone and register adjustment
+Focus on: {task_info['focus']}
+Goal: {task_info['goal']}
 
-REACT METHODOLOGY (Reasoning + Acting):
+Provide ONLY the improved text without explanations, analysis, or methodology descriptions."""
 
-REASONING PHASE:
-1. ANALYZE the original text:
-   - Identify the main message and key points
-   - Assess current writing quality and style
-   - Determine target audience and appropriate tone
-   - Recognize areas for improvement
+        user_message = f"""Task: {task.upper()} the following text.
 
-2. STRATEGIZE the enhancement approach:
-   - Choose appropriate vocabulary level
-   - Plan sentence structure improvements
-   - Consider flow and coherence enhancements
-   - Maintain authenticity and voice
+Original: "{text}"
 
-ACTING PHASE:
-3. IMPLEMENT improvements systematically:
-   - Apply vocabulary enhancements
-   - Restructure sentences for better flow
-   - Ensure logical progression of ideas
-   - Maintain original meaning and intent
+Goal: {task_info['goal']}
 
-4. REFINE and polish:
-   - Review for consistency and clarity
-   - Ensure natural language flow
-   - Verify all improvements serve the purpose
+Provide ONLY the improved version without explanations, analysis, or step-by-step breakdowns.
 
-CURRENT TASK: {task.upper()}
-GOAL: {task_info['goal']}
-FOCUS AREAS: {task_info['focus']}
-EXPECTED OUTCOME: {task_info['outcome']}"""
+Requirements:
+- Maintain the original meaning
+- {task_info['focus']}
+- Make it sound natural and engaging
+- Keep it concise and clear
 
-        user_message = f"""Please {task} the following text using the React methodology:
-
-ORIGINAL TEXT: "{text}"
-
-REASONING PROCESS:
-
-STEP 1 - TEXT ANALYSIS:
-- What is the main message and purpose?
-- What is the current writing quality and style?
-- Who is the likely target audience?
-- What specific improvements are needed?
-
-STEP 2 - ENHANCEMENT STRATEGY:
-- What vocabulary improvements can be made?
-- How can sentence structure be optimized?
-- What changes will improve flow and readability?
-- How can the text be made more engaging?
-
-STEP 3 - IMPLEMENTATION:
-Apply your strategy to create the enhanced version.
-
-STEP 4 - QUALITY CHECK:
-Ensure the enhanced text meets the goal of {task_info['goal']}.
-
-Please provide your enhanced version that achieves: {task_info['outcome']}"""
+Enhanced version:"""
 
         return {
             "messages": [
@@ -385,73 +342,24 @@ Please provide your enhanced version that achieves: {task_info['outcome']}"""
             Dictionary containing system and user messages
         """
 
-        system_message = """You are an expert in natural language processing and human communication patterns, specializing in making AI-generated text sound authentically human.
+        system_message = """You are an expert at making text sound natural and human. Transform formal or robotic text into conversational, authentic language.
 
-EXPERTISE:
-- Human communication patterns and natural language flow
-- Conversational tone and authentic voice development
-- Removal of AI-typical phrasing and robotic language
-- Cultural and contextual appropriateness
+Provide ONLY the humanized text without explanations or analysis."""
 
-HUMANIZATION STRATEGY (Chain of Thought):
+        user_message = f"""Make this text sound more natural and human:
 
-STEP 1 - AI PATTERN IDENTIFICATION:
-- Detect overly formal or robotic language
-- Identify repetitive sentence structures
-- Spot AI-typical phrases and expressions
-- Recognize unnatural word choices
+Original: "{text}"
 
-STEP 2 - HUMAN COMMUNICATION ANALYSIS:
-- Consider how humans naturally express these ideas
-- Think about conversational flow and rhythm
-- Account for personality and individual voice
-- Include natural imperfections and variations
+Provide ONLY the humanized version without explanations or analysis.
 
-STEP 3 - TRANSFORMATION PROCESS:
-- Replace formal language with conversational alternatives
-- Add natural transitions and connectors
-- Include subtle personality markers
-- Vary sentence length and structure
+Requirements:
+- Sound conversational and natural
+- Remove formal/robotic language
+- Add personality and warmth
+- Keep the same meaning
+- Make it feel authentic
 
-STEP 4 - AUTHENTICITY VERIFICATION:
-- Ensure the text sounds genuinely human
-- Maintain the original message and intent
-- Check for natural flow and readability
-- Verify cultural and contextual appropriateness
-
-QUALITY MARKERS OF HUMAN TEXT:
-- Natural conversational flow
-- Varied sentence structures
-- Personal touches and authentic voice
-- Appropriate informality where suitable
-- Subtle imperfections that feel genuine"""
-
-        user_message = f"""Please humanize the following AI-generated text to make it sound more natural and authentically human:
-
-AI-GENERATED TEXT: "{text}"
-
-HUMANIZATION PROCESS:
-
-STEP 1 - IDENTIFY AI PATTERNS:
-What makes this text sound AI-generated?
-- Overly formal language?
-- Repetitive structures?
-- Robotic phrasing?
-- Unnatural word choices?
-
-STEP 2 - PLAN HUMAN ALTERNATIVES:
-How would a human naturally express these same ideas?
-- What conversational tone would be appropriate?
-- How can we add personality and authenticity?
-- What natural variations can we include?
-
-STEP 3 - TRANSFORM THE TEXT:
-Create a version that sounds genuinely human while preserving the core message.
-
-STEP 4 - VERIFY AUTHENTICITY:
-Does the result sound like something a real person would write or say?
-
-Please provide a humanized version that feels natural, authentic, and genuinely human."""
+Humanized version:"""
 
         return {
             "messages": [
@@ -573,51 +481,15 @@ Please respond with just the probability number (0-100) representing the likelih
             Dictionary containing system and user messages
         """
 
-        system_message = """You are an expert language learning tutor and conversational partner, specializing in English and Vietnamese language education.
+        system_message = """You are a friendly English tutor. Help students learn English through conversation and practical examples.
 
-ROLE & EXPERTISE:
-- Professional language instructor with years of teaching experience
-- Expert in English-Vietnamese linguistics and cultural contexts
-- Skilled in adaptive teaching methods and personalized learning
-- Knowledgeable about common learning challenges and solutions
+Be:
+- Encouraging and supportive
+- Clear and concise
+- Practical with real examples
+- Conversational, not academic
 
-TEACHING PHILOSOPHY (React Methodology):
-
-REASONING APPROACH:
-1. ASSESS the learner's question or need
-2. IDENTIFY the appropriate teaching strategy
-3. CONSIDER the learner's level and context
-4. PLAN a helpful and educational response
-
-ACTING APPROACH:
-5. PROVIDE clear, accurate information
-6. INCLUDE practical examples and usage
-7. OFFER additional learning tips when relevant
-8. ENCOURAGE continued learning and practice
-
-COMMUNICATION STYLE:
-- Friendly and encouraging tone
-- Clear and accessible explanations
-- Practical examples and real-world usage
-- Cultural context when relevant
-- Adaptive to learner's level
-
-AREAS OF EXPERTISE:
-- Grammar explanations and rules
-- Vocabulary building and usage
-- Pronunciation guidance
-- Cultural context and nuances
-- Common mistakes and corrections
-- Learning strategies and tips
-- Conversational practice
-
-RESPONSE GUIDELINES:
-- Be patient and supportive
-- Provide accurate and helpful information
-- Use examples to illustrate points
-- Encourage questions and curiosity
-- Adapt complexity to the learner's needs
-- Include cultural insights when relevant"""
+Focus on helping students practice and improve their English skills."""
 
         # Format conversation history
         conversation_context = ""
@@ -629,25 +501,11 @@ RESPONSE GUIDELINES:
 
         current_question = messages[-1]["content"] if messages else ""
 
-        user_message = f"""As a language learning tutor, please help with the following:{conversation_context}
+        user_message = f"""Help the student with their English learning question:{conversation_context}
 
-CURRENT QUESTION/REQUEST: "{current_question}"
+Student's question: "{current_question}"
 
-TUTORING APPROACH:
-
-STEP 1 - UNDERSTAND THE NEED:
-What is the student asking about? What type of help do they need?
-
-STEP 2 - ASSESS THE CONTEXT:
-Consider the student's apparent level and the specific language learning challenge.
-
-STEP 3 - PROVIDE HELPFUL GUIDANCE:
-Offer clear, accurate, and educational assistance that helps the student learn.
-
-STEP 4 - ENHANCE THE LEARNING:
-Include examples, tips, or additional insights that will benefit the student's language learning journey.
-
-Please provide a helpful, educational, and encouraging response that addresses the student's needs while promoting effective language learning."""
+Provide a helpful, encouraging response with practical examples."""
 
         return {
             "messages": [

@@ -245,6 +245,279 @@ class OpenAIClient:
             logger.warning(f"Failed to extract text response: {str(e)}")
             return None
 
+    def _parse_flashcard_from_text(self, text_response: str, word: str) -> Optional[Dict[str, Any]]:
+        """
+        Parse flashcard information from text response when function calling is not supported.
+
+        Args:
+            text_response: Text response from API
+            word: Original word
+
+        Returns:
+            Parsed flashcard data or None
+        """
+        try:
+            import re
+
+            # Try to extract information using regex patterns
+            # Look for translation patterns
+            translation_patterns = [
+                r'translation[:\s]*["\']?([^"\'\n]+)["\']?',
+                r'translated[:\s]*["\']?([^"\'\n]+)["\']?',
+                r'means[:\s]*["\']?([^"\'\n]+)["\']?',
+                r'definition[:\s]*["\']?([^"\'\n]+)["\']?'
+            ]
+
+            translated_word = ""
+            for pattern in translation_patterns:
+                match = re.search(pattern, text_response, re.IGNORECASE)
+                if match:
+                    translated_word = match.group(1).strip()
+                    break
+
+            # Look for pronunciation patterns
+            pronunciation_patterns = [
+                r'pronunciation[:\s]*["\']?([^"\'\n]+)["\']?',
+                r'IPA[:\s]*["\']?([^"\'\n]+)["\']?',
+                r'/([^/]+)/',
+                r'\[([^\]]+)\]'
+            ]
+
+            pronunciation = ""
+            for pattern in pronunciation_patterns:
+                match = re.search(pattern, text_response, re.IGNORECASE)
+                if match:
+                    pronunciation = match.group(1).strip()
+                    break
+
+            # Look for synonyms patterns
+            synonyms_patterns = [
+                r'synonyms[:\s]*\[([^\]]+)\]',
+                r'synonyms[:\s]*([^.\n]+)',
+                r'similar words[:\s]*([^.\n]+)'
+            ]
+
+            synonyms = []
+            for pattern in synonyms_patterns:
+                match = re.search(pattern, text_response, re.IGNORECASE)
+                if match:
+                    synonyms_text = match.group(1).strip()
+                    # Split by common delimiters and clean up
+                    synonyms = [s.strip().strip('"\'') for s in re.split(r'[,;]', synonyms_text)]
+                    synonyms = [s for s in synonyms if s and len(s) > 1][:3]  # Take first 3
+                    break
+
+            # If we couldn't extract synonyms, provide some defaults
+            if not synonyms:
+                synonyms = ["similar", "equivalent", "related"]
+
+            # Ensure we have at least basic information
+            if not translated_word:
+                # Try to extract any meaningful content as translation
+                lines = text_response.split('\n')
+                for line in lines:
+                    line = line.strip()
+                    if line and not line.startswith(word) and len(line) < 50:
+                        translated_word = line
+                        break
+
+                if not translated_word:
+                    translated_word = "Translation not available"
+
+            if not pronunciation:
+                pronunciation = f"/{word}/"
+
+            return {
+                "word": word,
+                "translatedWord": translated_word,
+                "pronunciation": pronunciation,
+                "synonyms": synonyms
+            }
+
+        except Exception as e:
+            logger.error(f"Failed to parse flashcard from text: {str(e)}")
+            return None
+
+    async def _generate_flashcard_simple(self, word: str, target_language: str) -> Optional[Dict[str, Any]]:
+        """
+        Generate flashcard using a simple text-based prompt without function calling.
+
+        Args:
+            word: Word to create flashcard for
+            target_language: Target language for translation
+
+        Returns:
+            Flashcard data dictionary or None
+        """
+        try:
+            # Determine target language direction
+            if target_language.lower() in ["vietnamese", "vi"]:
+                lang_instruction = "Translate from English to Vietnamese"
+            elif target_language.lower() in ["english", "en"]:
+                lang_instruction = "Translate from Vietnamese to English"
+            else:
+                lang_instruction = "Auto-detect language and translate (English ↔ Vietnamese)"
+
+            # Create a focused prompt for better results
+            simple_prompt = f"""Create a language learning flashcard for: "{word}"
+
+{lang_instruction}
+
+Provide ONLY the following information in this exact format:
+Translation: [accurate translation]
+Pronunciation: [IPA notation]
+Synonyms: [3 synonyms in source language, comma-separated]
+
+Requirements:
+- Translation must be accurate and commonly used
+- Pronunciation in proper IPA format
+- Synonyms must be in the same language as the original word
+- Be concise and educational
+
+Respond with ONLY the requested format, no explanations."""
+
+            messages = [
+                {"role": "system", "content": "You are an expert language tutor. Provide accurate, concise flashcard information. Follow the exact format requested without additional explanations."},
+                {"role": "user", "content": simple_prompt}
+            ]
+
+            response = await self._make_api_request(messages=messages)
+            text_response = self._extract_text_response(response)
+
+            if text_response:
+                return self._parse_flashcard_from_text(text_response, word)
+
+            return None
+
+        except Exception as e:
+            logger.error(f"Failed to generate simple flashcard: {str(e)}")
+            return None
+
+    def _parse_grammar_from_text(self, text_response: str, original_text: str) -> Optional[Dict[str, Any]]:
+        """
+        Parse grammar check information from text response when function calling is not supported.
+
+        Args:
+            text_response: Text response from API
+            original_text: Original text that was checked
+
+        Returns:
+            Grammar check data or None
+        """
+        try:
+            import re
+
+            # Try to extract corrected text with better patterns
+            corrected_patterns = [
+                r'corrected text[:\s]*["\']?([^"\'\n]+)["\']?',
+                r'corrected[:\s]*["\']?([^"\'\n]+)["\']?',
+                r'correction[:\s]*["\']?([^"\'\n]+)["\']?',
+                r'fixed[:\s]*["\']?([^"\'\n]+)["\']?'
+            ]
+
+            corrected_text = original_text  # Default to original
+            for pattern in corrected_patterns:
+                match = re.search(pattern, text_response, re.IGNORECASE)
+                if match:
+                    corrected_text = match.group(1).strip()
+                    # Clean up common prefixes and suffixes
+                    prefixes_to_remove = ['text:', 'the text:', 'sentence:']
+                    for prefix in prefixes_to_remove:
+                        if corrected_text.lower().startswith(prefix):
+                            corrected_text = corrected_text[len(prefix):].strip()
+                            break
+                    # Remove quotes if present
+                    corrected_text = corrected_text.strip('"\'')
+                    break
+
+            # If no pattern matched, try to find any sentence that looks like a correction
+            if corrected_text == original_text:
+                # Look for complete sentences in the response
+                sentences = re.findall(r'[A-Z][^.!?]*[.!?]', text_response)
+                for sentence in sentences:
+                    # Skip sentences that contain "error" or "mistake"
+                    if not re.search(r'\b(error|mistake|wrong|incorrect)\b', sentence, re.IGNORECASE):
+                        # This might be the corrected version
+                        corrected_text = sentence.strip()
+                        break
+
+            # Try to extract errors
+            errors = []
+            error_patterns = [
+                r'errors?[:\s]*\[([^\]]+)\]',
+                r'errors?[:\s]*([^.\n]+)',
+                r'mistakes?[:\s]*([^.\n]+)',
+                r'problems?[:\s]*([^.\n]+)'
+            ]
+
+            for pattern in error_patterns:
+                match = re.search(pattern, text_response, re.IGNORECASE)
+                if match:
+                    errors_text = match.group(1).strip()
+                    # Split by common delimiters and clean up
+                    errors = [e.strip().strip('"\'') for e in re.split(r'[,;]', errors_text)]
+                    errors = [e for e in errors if e and len(e) > 3]  # Filter out short entries
+                    break
+
+            # If no errors found, check if the text seems correct
+            if not errors:
+                if corrected_text.lower() == original_text.lower():
+                    errors = ["No grammar errors found"]
+                else:
+                    errors = ["Grammar corrections applied"]
+
+            return {
+                "correctedText": corrected_text,
+                "errors": errors
+            }
+
+        except Exception as e:
+            logger.error(f"Failed to parse grammar from text: {str(e)}")
+            return None
+
+    async def _check_grammar_simple(self, text: str) -> Optional[Dict[str, Any]]:
+        """
+        Check grammar using a simple text-based prompt without function calling.
+
+        Args:
+            text: Text to check for grammar errors
+
+        Returns:
+            Grammar check data dictionary or None
+        """
+        try:
+            # Create a focused prompt for better grammar checking
+            simple_prompt = f"""Check and correct the grammar in this text: "{text}"
+
+Provide ONLY the following in this exact format:
+Corrected Text: [the grammatically correct version]
+Errors: [specific errors found, comma-separated]
+
+Requirements:
+- Fix ALL grammar, spelling, and punctuation errors
+- Keep the original meaning and style
+- List specific errors clearly (e.g., "subject-verb disagreement", "wrong tense")
+- If no errors, write "No grammar errors found" for errors
+
+Respond with ONLY the requested format, no explanations."""
+
+            messages = [
+                {"role": "system", "content": "You are an expert English grammar checker. Provide accurate corrections and identify specific errors. Follow the exact format requested without additional explanations."},
+                {"role": "user", "content": simple_prompt}
+            ]
+
+            response = await self._make_api_request(messages=messages)
+            text_response = self._extract_text_response(response)
+
+            if text_response:
+                return self._parse_grammar_from_text(text_response, text)
+
+            return None
+
+        except Exception as e:
+            logger.error(f"Failed to check grammar with simple prompt: {str(e)}")
+            return None
+
     async def generate_flashcard(self, word: str, target_language: str = "auto") -> Dict[str, Any]:
         """
         Generate a flashcard for the given word using advanced prompts.
@@ -265,12 +538,15 @@ class OpenAIClient:
             # Generate advanced prompt using the template engine
             prompt_data = self._prompt_engine.generate_flashcard_prompt(word, target_language)
 
-            # Make API request
+            # Try function calling first
             response = await self._make_api_request(
                 messages=prompt_data["messages"],
-                functions=prompt_data["functions"],
-                function_call=prompt_data["function_call"]
+                functions=prompt_data.get("functions"),
+                function_call=prompt_data.get("function_call")
             )
+
+            # Debug: Log the full response to understand the format
+            logger.debug(f"Full API response: {json.dumps(response, indent=2)}")
 
             # Extract function response
             function_result = self._extract_function_response(response)
@@ -284,6 +560,21 @@ class OpenAIClient:
                     "synonyms": function_result.get("synonyms", [])
                 }
             else:
+                # Fallback: Try to parse the response as text and extract information
+                logger.warning("Function call not supported, trying text-based fallback")
+                text_response = self._extract_text_response(response)
+                if text_response:
+                    fallback_result = self._parse_flashcard_from_text(text_response, word)
+                    if fallback_result:
+                        logger.info(f"Successfully generated flashcard for '{word}' using text fallback")
+                        return fallback_result
+
+                # Final fallback: Try with a simpler text-based prompt
+                logger.warning("Trying simplified text-based prompt")
+                simple_response = await self._generate_flashcard_simple(word, target_language)
+                if simple_response:
+                    return simple_response
+
                 raise APIException(
                     f"Failed to generate flashcard for '{word}': No valid function response",
                     error_code="INVALID_FUNCTION_RESPONSE"
@@ -324,6 +615,9 @@ class OpenAIClient:
                 function_call=prompt_data["function_call"]
             )
 
+            # Debug: Log the full response to understand the format
+            logger.debug(f"Full API response: {json.dumps(response, indent=2)}")
+
             # Extract function response
             function_result = self._extract_function_response(response)
 
@@ -334,6 +628,21 @@ class OpenAIClient:
                     "errors": function_result.get("errors", ["No grammar errors found"])
                 }
             else:
+                # Fallback: Try to parse the response as text and extract information
+                logger.warning("Function call not supported, trying text-based fallback")
+                text_response = self._extract_text_response(response)
+                if text_response:
+                    fallback_result = self._parse_grammar_from_text(text_response, text)
+                    if fallback_result:
+                        logger.info("Grammar check completed successfully using text fallback")
+                        return fallback_result
+
+                # Final fallback: Try with a simpler text-based prompt
+                logger.warning("Trying simplified text-based prompt for grammar check")
+                simple_response = await self._check_grammar_simple(text)
+                if simple_response:
+                    return simple_response
+
                 raise APIException(
                     "Failed to check grammar: No valid function response",
                     error_code="INVALID_FUNCTION_RESPONSE"
