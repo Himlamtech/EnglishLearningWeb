@@ -40,8 +40,17 @@ if not exist "backend\venv" (
 )
 
 REM Activate virtual environment and install dependencies
+echo Activating virtual environment and installing dependencies...
 call backend\venv\Scripts\activate.bat
+if %ERRORLEVEL% neq 0 (
+    echo Error: Failed to activate virtual environment
+    exit /b 1
+)
 pip install -r backend\requirements.txt
+if %ERRORLEVEL% neq 0 (
+    echo Error: Failed to install backend dependencies
+    exit /b 1
+)
 pip install aiohttp
 
 REM Install frontend dependencies if needed
@@ -50,6 +59,11 @@ if not exist "frontend\node_modules" (
     echo Installing frontend dependencies...
     cd frontend
     npm install
+    if %ERRORLEVEL% neq 0 (
+        echo Error: Failed to install frontend dependencies
+        cd ..
+        exit /b 1
+    )
     cd ..
 )
 
@@ -66,12 +80,30 @@ echo Configuring frontend port...
 echo PORT=3000> frontend\.env.local
 echo NEXT_PUBLIC_API_URL=http://localhost:8000>> frontend\.env.local
 
+REM Kill any process running on port 8000 (backend)
+echo Checking if port 8000 is in use...
+for /f "tokens=5" %%a in ('netstat -ano ^| findstr :8000 ^| findstr LISTENING') do (
+    echo Killing process using port 8000...
+    taskkill /F /PID %%a 2>nul
+    timeout /t 1 /nobreak > nul
+)
+
 REM Start servers in separate command windows
 echo Starting backend server...
-start "FlashAI Backend" cmd /c "cd backend && call venv\Scripts\activate.bat && python run.py"
+start "FlashAI Backend" cmd /c "cd backend && call venv\Scripts\activate.bat && python main.py"
 
-REM Wait a bit for the backend to start
-timeout /t 3 /nobreak > nul
+REM Wait for the backend to start and check if it's running
+echo Waiting for backend to start...
+timeout /t 5 /nobreak > nul
+
+REM Check if backend is running on port 8000
+echo Checking if backend is running...
+netstat -an | findstr :8000 | findstr LISTENING >nul
+if %ERRORLEVEL% neq 0 (
+    echo Warning: Backend may not have started properly
+    echo Please check the backend window for errors
+    timeout /t 3 /nobreak > nul
+)
 
 echo Starting frontend development server...
 start "FlashAI Frontend" cmd /c "cd frontend && npm run dev"

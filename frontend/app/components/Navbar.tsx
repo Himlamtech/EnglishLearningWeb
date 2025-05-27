@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Disclosure } from '@headlessui/react';
@@ -20,6 +20,11 @@ const navigation = [
 const Navbar: React.FC = () => {
   const pathname = usePathname();
   const { theme, toggleTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   return (
     <Disclosure as="nav" className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-md shadow-lg border-b border-white/20 dark:border-gray-700/20 sticky top-0 z-50">
@@ -54,17 +59,19 @@ const Navbar: React.FC = () => {
 
               <div className="flex items-center space-x-4">
                 {/* Theme Toggle Button */}
-                <button
-                  onClick={toggleTheme}
-                  className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-300 transform hover:scale-110"
-                  aria-label="Toggle theme"
-                >
-                  {theme === 'light' ? (
-                    <MoonIcon className="h-5 w-5 text-gray-600 dark:text-gray-300" />
-                  ) : (
-                    <SunIcon className="h-5 w-5 text-yellow-500" />
-                  )}
-                </button>
+                {mounted && (
+                  <button
+                    onClick={toggleTheme}
+                    className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-300 transform hover:scale-110"
+                    aria-label="Toggle theme"
+                  >
+                    {theme === 'light' ? (
+                      <MoonIcon className="h-5 w-5 text-gray-600 dark:text-gray-300" />
+                    ) : (
+                      <SunIcon className="h-5 w-5 text-yellow-500" />
+                    )}
+                  </button>
+                )}
 
                 {/* Mobile menu button */}
                 <div className="sm:hidden">

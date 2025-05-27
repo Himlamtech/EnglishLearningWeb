@@ -56,8 +56,17 @@ if [ ! -d "./backend/venv" ]; then
 fi
 
 # Activate virtual environment and install dependencies
+echo "Activating virtual environment and installing dependencies..."
 source backend/venv/bin/activate
+if [ $? -ne 0 ]; then
+    echo "Error: Failed to activate virtual environment"
+    exit 1
+fi
 pip install -r backend/requirements.txt
+if [ $? -ne 0 ]; then
+    echo "Error: Failed to install backend dependencies"
+    exit 1
+fi
 pip install aiohttp  # Ensure aiohttp is installed for API calls
 
 # Install frontend dependencies if needed
@@ -66,15 +75,29 @@ if [ ! -d "./frontend/node_modules" ]; then
     echo "Installing frontend dependencies..."
     cd frontend
     npm install
+    if [ $? -ne 0 ]; then
+        echo "Error: Failed to install frontend dependencies"
+        cd ..
+        exit 1
+    fi
     cd ..
 fi
 
-# Kill any process running on port 3000
+# Kill any process running on port 3000 (frontend)
 echo "Checking if port 3000 is in use..."
 PORT_PID=$(lsof -t -i:3000 2>/dev/null)
 if [ ! -z "$PORT_PID" ]; then
     echo "Killing process using port 3000..."
     kill -9 $PORT_PID 2>/dev/null
+    sleep 1
+fi
+
+# Kill any process running on port 8000 (backend)
+echo "Checking if port 8000 is in use..."
+BACKEND_PORT_PID=$(lsof -t -i:8000 2>/dev/null)
+if [ ! -z "$BACKEND_PORT_PID" ]; then
+    echo "Killing process using port 8000..."
+    kill -9 $BACKEND_PORT_PID 2>/dev/null
     sleep 1
 fi
 
@@ -85,12 +108,21 @@ echo "NEXT_PUBLIC_API_URL=http://localhost:8000" >> ./frontend/.env.local
 
 echo "Starting backend server..."
 cd backend
-python run.py &
+python main.py &
 BACKEND_PID=$!
 cd ..
 
-# Wait a bit for the backend to start
-sleep 3
+# Wait for the backend to start and check if it's running
+echo "Waiting for backend to start..."
+sleep 5
+
+# Check if backend is running on port 8000
+echo "Checking if backend is running..."
+if ! lsof -i:8000 >/dev/null 2>&1; then
+    echo "Warning: Backend may not have started properly"
+    echo "Please check for errors above"
+    sleep 3
+fi
 
 echo "Starting frontend development server..."
 cd frontend

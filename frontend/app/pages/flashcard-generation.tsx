@@ -16,15 +16,37 @@ const FlashcardGeneration: React.FC = () => {
       return;
     }
 
+    // Validate word length
+    if (word.trim().length > 100) {
+      toast.error('Word must be no more than 100 characters long');
+      return;
+    }
+
     setLoading(true);
     try {
-      const params: FlashcardCreateParams = { word, targetLanguage };
+      const params: FlashcardCreateParams = { word: word.trim(), targetLanguage };
       const generated = await api.flashcard.generate(params);
       setFlashcard(generated);
+      setWord(''); // Clear the input field on success
       toast.success('Flashcard generated successfully!');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error generating flashcard:', error);
-      toast.error('Failed to generate flashcard');
+
+      // Handle specific error cases
+      if (error.response?.status === 400) {
+        const errorMessage = error.response?.data?.message || 'Invalid input';
+        if (errorMessage.includes('already exists')) {
+          toast.error(`Flashcard for "${word.trim()}" already exists`);
+        } else if (errorMessage.includes('characters long')) {
+          toast.error('Word must be no more than 100 characters long');
+        } else {
+          toast.error(errorMessage);
+        }
+      } else if (error.response?.status === 500) {
+        toast.error('Server error. Please try again later.');
+      } else {
+        toast.error('Failed to generate flashcard. Please check your connection.');
+      }
     } finally {
       setLoading(false);
     }
@@ -52,6 +74,7 @@ const FlashcardGeneration: React.FC = () => {
               placeholder="Enter a word (e.g., apple, cây, happiness)"
               value={word}
               onChange={(e) => setWord(e.target.value)}
+              maxLength={100}
               required
             />
           </div>
@@ -90,7 +113,7 @@ const FlashcardGeneration: React.FC = () => {
         <div className="max-w-lg mx-auto">
           <h2 className="text-2xl font-bold text-gray-800 mb-4">Generated Flashcard</h2>
           <FlashcardCard flashcard={flashcard} />
-          
+
           <div className="mt-8 text-center">
             <p className="text-sm text-gray-600 mb-4">
               Your flashcard has been saved automatically. You can view all your flashcards in the Learn section.
@@ -102,4 +125,4 @@ const FlashcardGeneration: React.FC = () => {
   );
 };
 
-export default FlashcardGeneration; 
+export default FlashcardGeneration;
